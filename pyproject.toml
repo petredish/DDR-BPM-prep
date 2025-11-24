@@ -1,8 +1,11 @@
 [tool.poetry]
 name = "ddr-bpm-simfiles"
-version = "1.0"
+version = "1.0.0"
 description = "DDR simfile scraper and processor\u001b"
-authors = ["Michael X"]
+authors = [
+    "Michael X",
+    "Peter P"
+]
 license = "Copyleft"
 readme = "README.md"
 

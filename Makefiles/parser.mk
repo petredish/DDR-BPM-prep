@@ -10,7 +10,8 @@ courses:
 	poetry run python $(SRC_DIR)/parse_courses.py
 
 # check for duplicates, missing songs, etc.
-check_songs: fix clean
+check_songs:
+    # fix clean
 	$(info ################################################################################)
 	$(info # 1. Make sure all_songs.txt has ending new line)
 	$(info # 2. Make sure you ran a full scrape: make full_scrape)
@@ -27,4 +28,28 @@ load:
 
 # perform various file fixes
 fix:
-	bash $(PROJ_DIR)/scripts/parse/fix.sh 
+	bash $(PROJ_DIR)/scripts/parse/fix.sh
+
+check_folder:
+	poetry run python $(SRC_DIR)/check_updates.py
+
+generate_dat:
+# 	poetry run python $(SRC_DIR)/generate_dat.py "1st"
+# 	poetry run python $(SRC_DIR)/generate_dat.py "2nd"
+# 	poetry run python $(SRC_DIR)/generate_dat.py "3rd"
+# 	poetry run python $(SRC_DIR)/generate_dat.py "4th"
+# 	poetry run python $(SRC_DIR)/generate_dat.py "5th"
+# 	poetry run python $(SRC_DIR)/generate_dat.py "X"
+# 	poetry run python $(SRC_DIR)/generate_dat.py "X2"
+# 	poetry run python $(SRC_DIR)/generate_dat.py "X3"
+# 	poetry run python $(SRC_DIR)/generate_dat.py "SuperNOVA"
+# 	poetry run python $(SRC_DIR)/generate_dat.py "SuperNOVA2"
+# 	poetry run python $(SRC_DIR)/generate_dat.py "MAX"
+# 	poetry run python $(SRC_DIR)/generate_dat.py "MAX2"
+# 	poetry run python $(SRC_DIR)/generate_dat.py "2013"
+# 	poetry run python $(SRC_DIR)/generate_dat.py "2014"
+# 	poetry run python $(SRC_DIR)/generate_dat.py "A"
+# 	poetry run python $(SRC_DIR)/generate_dat.py "A20"
+	poetry run python $(SRC_DIR)/generate_dat.py "A20 PLUS"
+	poetry run python $(SRC_DIR)/generate_dat.py "A3"
+	poetry run python $(SRC_DIR)/generate_dat.py "WORLD"

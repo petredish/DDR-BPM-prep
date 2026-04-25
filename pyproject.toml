@@ -1,4 +1,5 @@
 [tool.poetry]
+package-mode = false
 name = "ddr-bpm-simfiles"
 version = "1.0.0"
 description = "DDR simfile scraper and processor\u001b"

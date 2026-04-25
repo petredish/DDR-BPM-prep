@@ -111,17 +111,17 @@ def needs_update(song, version_dir, margin_days):
     local_mtime = datetime.fromtimestamp(sm.stat().st_mtime)
     if song["last_update"] is None:
         return False, f"no remote date; local {local_mtime:%Y-%m-%d}"
-    # Pad toward more downloads: the listed "X ago" rounds, so the real update
-    # could be slightly more recent than the displayed value.
-    threshold = song["last_update"] + timedelta(days=margin_days)
+    # The listed "X ago" is rounded; treat any local file within `margin_days`
+    # of the displayed time as up-to-date.
+    threshold = song["last_update"] - timedelta(days=margin_days)
     if local_mtime >= threshold:
         return False, (
             f"local {local_mtime:%Y-%m-%d} >= remote "
-            f"~{song['last_update']:%Y-%m-%d}+{margin_days:.0f}d"
+            f"~{song['last_update']:%Y-%m-%d}-{margin_days:.0f}d"
         )
     return True, (
         f"local {local_mtime:%Y-%m-%d} < remote "
-        f"~{song['last_update']:%Y-%m-%d}+{margin_days:.0f}d"
+        f"~{song['last_update']:%Y-%m-%d}-{margin_days:.0f}d"
     )
 
 
@@ -163,9 +163,9 @@ def main():
                         help="List planned downloads without doing them")
     parser.add_argument("--force", action="store_true",
                         help="Re-download every song regardless of date")
-    parser.add_argument("--margin-days", type=float, default=14.0,
-                        help="Padding for the listed approximate date "
-                             "(default 14d). Higher = more downloads.")
+    parser.add_argument("--margin-days", type=float, default=30.0,
+                        help="Fuzz window around the listed approximate date "
+                             "(default 30d). Higher = fewer downloads.")
     parser.add_argument("--only", help="Filter songs by title substring")
     args = parser.parse_args()
 

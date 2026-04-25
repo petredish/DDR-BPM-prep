@@ -90,7 +90,7 @@ def find_local_song_dir(version_dir, title):
         seen.add(cand)
 
         d = version_dir / cand
-        if d.is_dir() and any(d.glob("*.sm")):
+        if d.is_dir() and (any(d.glob("*.sm")) or any(d.glob("*.ssc"))):
             return d
 
         cand_lower = cand.lower()
@@ -98,7 +98,7 @@ def find_local_song_dir(version_dir, title):
             if (
                 sub.is_dir()
                 and sub.name.lower() == cand_lower
-                and any(sub.glob("*.sm"))
+                and (any(sub.glob("*.sm")) or any(sub.glob("*.ssc")))
             ):
                 return sub
     return None

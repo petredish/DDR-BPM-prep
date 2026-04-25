@@ -26,7 +26,7 @@ scrape_packs:
 # Some songs aren't located in the above packs.
 # Download them into one of the folders
 scrape_songs:
-	bash $(PROJ_DIR)/scripts/scrape/zenius_song.sh 7568 2nd # PARANOiA KCET ~clean mix~
+# 	bash $(PROJ_DIR)/scripts/scrape/zenius_song.sh 7568 2nd # PARANOiA KCET ~clean mix~
 	bash $(PROJ_DIR)/scripts/scrape/zenius_song.sh 38006 3rd # LOVE THIS FEELIN'
 
 # Some songs are duplicates
@@ -42,4 +42,7 @@ unzip:
 	bash $(PROJ_DIR)/scripts/scrape/unzip_pack.sh
 
 check_updates:
-	bash $(PROJ_DIR)/scripts/scrape/check_updates.sh
+# 	bash $(PROJ_DIR)/scripts/scrape/check_updates.sh 1709 WORLD
+	bash $(PROJ_DIR)/scripts/scrape/check_updates.sh 32 2nd
+	bash $(PROJ_DIR)/scripts/scrape/check_updates.sh 40 MAX
+	bash $(PROJ_DIR)/scripts/scrape/check_updates.sh 41 EXTREME

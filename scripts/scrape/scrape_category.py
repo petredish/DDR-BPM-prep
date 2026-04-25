@@ -71,8 +71,8 @@ def parse_category(html):
         }
 
 
-def find_local_sm(version_dir, title):
-    """Locate the .sm file for a song, with light fuzzy matching."""
+def find_local_song_dir(version_dir, title):
+    """Locate the song folder (containing a .sm), with light fuzzy matching."""
     if not version_dir.is_dir():
         return None
 
@@ -90,38 +90,57 @@ def find_local_sm(version_dir, title):
         seen.add(cand)
 
         d = version_dir / cand
-        if d.is_dir():
-            sms = list(d.glob("*.sm"))
-            if sms:
-                return sms[0]
+        if d.is_dir() and any(d.glob("*.sm")):
+            return d
 
         cand_lower = cand.lower()
         for sub in version_dir.iterdir():
-            if sub.is_dir() and sub.name.lower() == cand_lower:
-                sms = list(sub.glob("*.sm"))
-                if sms:
-                    return sms[0]
+            if (
+                sub.is_dir()
+                and sub.name.lower() == cand_lower
+                and any(sub.glob("*.sm"))
+            ):
+                return sub
     return None
 
 
+def newest_file_mtime(folder):
+    """mtime of the newest file in `folder` (any extension)."""
+    latest = None
+    for f in folder.iterdir():
+        if not f.is_file():
+            continue
+        m = datetime.fromtimestamp(f.stat().st_mtime)
+        if latest is None or m > latest:
+            latest = m
+    return latest
+
+
+def effective_margin(song_age_days, base_margin_days, scale=0.10):
+    """Allow more slack for older listings (their rounding is coarser)."""
+    return max(base_margin_days, song_age_days * scale)
+
+
 def needs_update(song, version_dir, margin_days):
-    sm = find_local_sm(version_dir, song["title"])
-    if sm is None:
+    folder = find_local_song_dir(version_dir, song["title"])
+    if folder is None:
         return True, "no local copy"
-    local_mtime = datetime.fromtimestamp(sm.stat().st_mtime)
+    local_mtime = newest_file_mtime(folder)
+    if local_mtime is None:
+        return True, "folder is empty"
     if song["last_update"] is None:
         return False, f"no remote date; local {local_mtime:%Y-%m-%d}"
-    # The listed "X ago" is rounded; treat any local file within `margin_days`
-    # of the displayed time as up-to-date.
-    threshold = song["last_update"] - timedelta(days=margin_days)
+    age_days = max(0.0, (datetime.now() - song["last_update"]).total_seconds() / 86400)
+    margin = effective_margin(age_days, margin_days)
+    threshold = song["last_update"] - timedelta(days=margin)
     if local_mtime >= threshold:
         return False, (
             f"local {local_mtime:%Y-%m-%d} >= remote "
-            f"~{song['last_update']:%Y-%m-%d}-{margin_days:.0f}d"
+            f"~{song['last_update']:%Y-%m-%d}-{margin:.0f}d"
         )
     return True, (
         f"local {local_mtime:%Y-%m-%d} < remote "
-        f"~{song['last_update']:%Y-%m-%d}-{margin_days:.0f}d"
+        f"~{song['last_update']:%Y-%m-%d}-{margin:.0f}d"
     )
 
 

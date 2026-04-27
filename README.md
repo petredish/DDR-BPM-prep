@@ -50,7 +50,11 @@ Rely on `Makefile` targets imported from `Makefiles/*.mk` for the 3 main steps o
 ## Run
 ### Scrape
 ```shell
-make full_scrape
+# Get all songs
+make update_songs
+
+# Check for songs to be updated
+make update_songs_dry
 ```
 
 ### Process and write data
@@ -68,6 +72,10 @@ Currently this only involves downscaling jackets.
 ```shell
 make predeploy
 ```
+
+### Duplicate songs
+there may be an edge case scenario where we have 2 different songs with the same title. you can add to 
+> data/rename_map.csv
 
 # Quality of Life
 - Use `ipdb.set_trace()` for debugging.

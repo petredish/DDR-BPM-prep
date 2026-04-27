@@ -20,7 +20,7 @@ def loadSongs(songs: list[dict]) -> None:
         folders = glob.glob(str(env.seed_dir) + "/*/" + glob.escape(title))
         if not folders:
             env.logger.error(f"{title} not found in {env.seed_dir}")
-            raise RuntimeError
+            continue
 
         if len(folders) > 1:
             env.logger.warning(f"Duplicates ({len(folders)}): {title}")

@@ -71,8 +71,30 @@ def parse_category(html):
         }
 
 
-def find_local_song_dir(version_dir, title):
-    """Locate the song folder (containing a .sm), with light fuzzy matching."""
+def load_rename_map(data_dir):
+    """Load rename_map.csv mapping (version, original_name) -> new_name."""
+    path = data_dir / "rename_map.csv"
+    renames = {}
+    if not path.exists():
+        return renames
+    with open(path) as f:
+        for line in f:
+            line = line.strip()
+            if not line or line.startswith("version,"):
+                continue
+            parts = line.split(",", 2)
+            if len(parts) == 3:
+                version, from_name, to_name = parts
+                renames[(version, from_name)] = to_name
+    return renames
+
+
+def find_local_song_dir(version_dir, title, rename_map=None, version=None):
+    """Locate the song folder (containing a .sm), with light fuzzy matching.
+
+    If a rename_map is provided, also checks the renamed folder name so that
+    already-renamed downloads are not re-fetched.
+    """
     if not version_dir.is_dir():
         return None
 
@@ -82,6 +104,13 @@ def find_local_song_dir(version_dir, title):
     stripped = title.split(" /")[0].strip()
     if stripped and stripped != title:
         candidates.append(stripped)
+
+    # Also check the renamed folder so we don't re-download renamed songs.
+    if rename_map and version:
+        for cand in list(candidates):
+            renamed = rename_map.get((version, cand))
+            if renamed and renamed not in candidates:
+                candidates.append(renamed)
 
     seen = set()
     for cand in candidates:
@@ -121,8 +150,8 @@ def effective_margin(song_age_days, base_margin_days, scale=0.10):
     return max(base_margin_days, song_age_days * scale)
 
 
-def needs_update(song, version_dir, margin_days):
-    folder = find_local_song_dir(version_dir, song["title"])
+def needs_update(song, version_dir, margin_days, rename_map=None, version=None):
+    folder = find_local_song_dir(version_dir, song["title"], rename_map, version)
     if folder is None:
         return True, "no local copy"
     local_mtime = newest_file_mtime(folder)
@@ -144,9 +173,9 @@ def needs_update(song, version_dir, margin_days):
     )
 
 
-def download_and_extract(session, song, version_dir):
+def download_and_extract(session, song, version_dir, timeout=120):
     url = DOWNLOAD_URL.format(sid=song["id"])
-    r = session.get(url, allow_redirects=True, timeout=120)
+    r = session.get(url, allow_redirects=True, timeout=timeout)
     r.raise_for_status()
     if r.content[:2] != b"PK":
         raise RuntimeError(
@@ -211,11 +240,20 @@ def main():
     parser.add_argument("--update-allsongs", action="store_true",
                         help="After successful downloads, append new folder "
                              "names to data/all_songs.txt (re-sorted).")
+    parser.add_argument("--max-age-days", type=float, default=None,
+                        help="Skip songs whose listed remote date is older "
+                             "than N days. Useful for skipping legacy songs "
+                             "that don't really need updating.")
+    parser.add_argument("--http-timeout", type=float, default=120.0,
+                        help="Per-download HTTP timeout in seconds "
+                             "(default 120).")
     args = parser.parse_args()
 
     data_dir = Path(args.data_dir).resolve()
     version_dir = data_dir / args.version
     version_dir.mkdir(parents=True, exist_ok=True)
+
+    rename_map = load_rename_map(data_dir)
 
     session = requests.Session()
     session.headers["User-Agent"] = "ddr-bpm-prep-scraper/1.0"
@@ -233,49 +271,73 @@ def main():
           f"(target: {version_dir})\n")
 
     plan = []
+    skipped_old = 0
     for s in songs:
         if args.force:
             ok, reason = True, "forced"
         else:
-            ok, reason = needs_update(s, version_dir, args.margin_days)
+            ok, reason = needs_update(s, version_dir, args.margin_days, rename_map, args.version)
+        if ok and args.max_age_days is not None and s["last_update"] is not None:
+            age_days = (datetime.now() - s["last_update"]).total_seconds() / 86400
+            if age_days > args.max_age_days:
+                ok = False
+                reason = f"older than --max-age-days={args.max_age_days:.0f} (~{age_days:.0f}d)"
+                skipped_old += 1
         marker = "DL" if ok else " ."
         title = s["title"][:48]
         print(f"  [{marker}] {s['id']:>6}  {title:<48}  {reason}")
         if ok:
             plan.append(s)
 
-    print(f"\n{len(plan)} song(s) need download")
-    if args.dry_run or not plan:
-        if args.update_allsongs and args.dry_run:
-            allsongs_path = data_dir / "all_songs.txt"
-            existing = set()
-            if allsongs_path.exists():
-                with open(allsongs_path, "r") as f:
-                    existing = {ln.strip() for ln in f if ln.strip()}
-            projected = sorted({s["title"] for s in plan if s["title"] not in existing})
-            if projected:
-                print(f"\nWould append to {allsongs_path}:")
-                for t in projected:
-                    print(f"  + {t}")
-                print("(actual folder name may differ from listing title; "
-                      "re-run without --dry-run to use real extracted names)")
-        return 0
+    print(f"\n{len(plan)} song(s) need download" +
+          (f" ({skipped_old} skipped by --max-age-days)" if skipped_old else ""))
 
     failures = 0
-    extracted_folders = []
-    for s in plan:
-        print(f"\n-> {s['id']}  {s['title']}")
-        try:
-            folder = download_and_extract(session, s, version_dir)
-            print(f"   extracted to {folder}")
-            extracted_folders.append(folder.name)
-        except Exception as e:
-            failures += 1
-            print(f"   ! {e}")
+    folder_names = []  # folder names to feed into all_songs.txt
 
-    if args.update_allsongs and extracted_folders:
+    if args.dry_run:
+        # No downloads. For --update-allsongs, fall back to local folders that
+        # already exist for songs in the listing (sync-only mode).
+        if args.update_allsongs:
+            for s in songs:
+                local = find_local_song_dir(version_dir, s["title"], rename_map, args.version)
+                if local is not None:
+                    folder_names.append(local.name)
+    else:
+        try:
+            for s in plan:
+                print(f"\n-> {s['id']}  {s['title']}")
+                try:
+                    folder = download_and_extract(
+                        session, s, version_dir, timeout=args.http_timeout
+                    )
+                    rename_key = (args.version, folder.name)
+                    if rename_key in rename_map:
+                        new_name = rename_map[rename_key]
+                        new_folder = folder.parent / new_name
+                        folder.rename(new_folder)
+                        print(f"   renamed {folder.name!r} -> {new_name!r}")
+                        folder = new_folder
+                    print(f"   extracted to {folder}")
+                    folder_names.append(folder.name)
+                except Exception as e:
+                    failures += 1
+                    print(f"   ! {e}")
+        except KeyboardInterrupt:
+            print("\n^C — stopping downloads, finalizing what was extracted")
+        # Also pick up any "ok" songs whose local folder is on disk but not
+        # yet in all_songs.txt — a real run shouldn't leave them un-listed.
+        if args.update_allsongs:
+            for s in songs:
+                if s in plan:
+                    continue
+                local = find_local_song_dir(version_dir, s["title"], rename_map, args.version)
+                if local is not None:
+                    folder_names.append(local.name)
+
+    if args.update_allsongs:
         allsongs_path = data_dir / "all_songs.txt"
-        added = update_allsongs(allsongs_path, extracted_folders)
+        added = update_allsongs(allsongs_path, folder_names)
         if added:
             print(f"\nAppended {len(added)} entr(y/ies) to {allsongs_path}:")
             for a in added:

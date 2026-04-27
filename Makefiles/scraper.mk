@@ -52,7 +52,7 @@ check_updates:
 # needed) and downloads only stale songs. Override SCRAPE_FLAGS for --force,
 # --margin-days, --only, etc.
 SCRAPE_PY    = poetry run python $(PROJ_DIR)/scripts/scrape/scrape_category.py
-SCRAPE_FLAGS ?= --data-dir $(SEED_DIR)
+SCRAPE_FLAGS ?= --data-dir $(SEED_DIR) --update-allsongs
 DRY_RUN      ?=
 
 update_songs:

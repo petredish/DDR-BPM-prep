@@ -9,9 +9,12 @@ songs:
 courses:
 	poetry run python $(SRC_DIR)/parse_courses.py
 
+# remove songs from all_songs.txt that appear in removed.txt
+clean_songs:
+	poetry run python $(SRC_DIR)/clean_songs.py
+
 # check for duplicates, missing songs, etc.
 check_songs:
-    # fix clean
 	$(info ################################################################################)
 	$(info # 1. Make sure all_songs.txt has ending new line)
 	$(info # 2. Make sure you ran a full scrape: make full_scrape)

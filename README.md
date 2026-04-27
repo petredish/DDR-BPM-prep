@@ -73,6 +73,10 @@ Currently this only involves downscaling jackets.
 make predeploy
 ```
 
+### Duplicate songs
+there may be an edge case scenario where we have 2 different songs with the same title. you can add to 
+> data/rename_map.csv
+
 # Quality of Life
 - Use `ipdb.set_trace()` for debugging.
 - Use `ptpython` for a better REPL (see [official repo](https://github.com/prompt-toolkit/ptpython?tab=readme-ov-file#embedding-the-repl) on setting up a PYTHONSTARTUP).

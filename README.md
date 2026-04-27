@@ -50,7 +50,11 @@ Rely on `Makefile` targets imported from `Makefiles/*.mk` for the 3 main steps o
 ## Run
 ### Scrape
 ```shell
-make full_scrape
+# Get all songs
+make update_songs
+
+# Check for songs to be updated
+make update_songs_dry
 ```
 
 ### Process and write data

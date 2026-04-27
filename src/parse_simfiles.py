@@ -30,7 +30,7 @@ def loadSongs(songs: list[dict]) -> None:
         path = Path(folders.pop())
         res = SimfileRes(path)
 
-        song = {"ssc": res.ssc, "version": path.parent.name, "name": path.name}
+        song = {"ssc": res.ssc, "version": path.parent.name, "name": path.name, "simfile_name": res.simfile.name}
         songs.append(song)
 
 
@@ -39,12 +39,7 @@ def addChartData(songs: list) -> None:
     loads stepchart data to "songs" in-place
     """
     for song in songs:
-        simfile_path = (
-            env.seed_dir
-            / song["version"]
-            / song["name"]
-            / (song["name"] + (".ssc" if song["ssc"] else ".sm"))
-        )
+        simfile_path = env.seed_dir / song["version"] / song["name"] / song["simfile_name"]
 
         parser = SimfileParser(simfile_path)
 

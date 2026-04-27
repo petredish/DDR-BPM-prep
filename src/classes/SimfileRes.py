@@ -31,10 +31,12 @@ class SimfileRes:
             return Path()
 
     def findSimfile(self, foldername: Path) -> Path:
-        path = self.findFile(foldername / (self.name + ".sm"))
-        if path == Path():
-            path = self.findFile(foldername / (self.name + ".ssc"))
-        return path
+        for stem in [self.name, self.name.lstrip(".")]:
+            for ext in [".sm", ".ssc"]:
+                path = self.findFile(foldername / (stem + ext))
+                if path != Path():
+                    return path
+        return Path()
 
     def findJacket(self, foldername: Path) -> Path:
         return self.findFile(foldername / (self.name + "-jacket.png"))

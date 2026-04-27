@@ -40,7 +40,7 @@ PARANOiA MAX~DIRTY MIX~,expert
 
 9th Dan (九段)
 First Action,expert
-Continue to the real world?,difficult
+Continue to the real world,difficult
 AFRONOVA,expert
 
 10th Dan (十段)

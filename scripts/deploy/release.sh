@@ -7,7 +7,7 @@ if [ "$answer" != "${answer#[Yy]}" ] ;then
   echo Release confirmed...
   gh release delete Latest -y --cleanup-tag
   echo Creating new release...
-  gh release create Latest -n "$(date)" build/*.{txt,zip}
+  gh release create Latest -n "$(date)" build/*.{txt,zip} build/courses/*.json
 else
   echo Release stopped.
 fi

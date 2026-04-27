@@ -110,14 +110,8 @@ def summariseSong(song):
         return [min_bpm] if min_bpm == max_bpm else [min_bpm, dom_bpm, max_bpm]
 
     def summariseLevels(levels):
-        map = {
-            "beginner": "b",
-            "easy": "B",
-            "medium": "D",
-            "hard": "E",
-            "challenge": "C",
-        }
-        return {map[d]: levels[d] for d in map.keys() if d in levels.keys()}
+        keys = ("beginner", "easy", "medium", "hard", "challenge")
+        return {k: levels[k] for k in keys if k in levels}
 
     song_summary = {
         "name": song["name"],

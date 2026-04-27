@@ -41,12 +41,6 @@ dedupe:
 unzip:
 	bash $(PROJ_DIR)/scripts/scrape/unzip_pack.sh
 
-check_updates:
-# 	bash $(PROJ_DIR)/scripts/scrape/check_updates.sh 1709 WORLD
-	bash $(PROJ_DIR)/scripts/scrape/check_updates.sh 32 2nd
-	bash $(PROJ_DIR)/scripts/scrape/check_updates.sh 40 MAX
-	bash $(PROJ_DIR)/scripts/scrape/check_updates.sh 41 EXTREME
-
 # Per-category scrape (Python alternative to check_updates.sh): compares the
 # listed remote "X ago" date against the local .sm mtime directly (no .dat
 # needed) and downloads only stale songs. Override SCRAPE_FLAGS for --force,

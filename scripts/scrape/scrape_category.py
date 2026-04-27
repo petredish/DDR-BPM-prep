@@ -173,6 +173,28 @@ def download_and_extract(session, song, version_dir):
         return version_dir / Path(members[0].filename).parts[0]
 
 
+def update_allsongs(allsongs_path, new_titles):
+    """Merge `new_titles` into `allsongs_path`, ASCII-sorted, no duplicates.
+
+    Returns the list of newly-added titles.
+    """
+    existing = []
+    if allsongs_path.exists():
+        with open(allsongs_path, "r") as f:
+            existing = [line.rstrip("\n") for line in f]
+        while existing and not existing[-1]:
+            existing.pop()
+    existing_set = set(existing)
+    additions = sorted({t for t in new_titles if t and t not in existing_set})
+    if not additions:
+        return []
+    combined = sorted(existing_set | set(additions))
+    with open(allsongs_path, "w") as f:
+        for line in combined:
+            f.write(line + "\n")
+    return additions
+
+
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("category_id", help="Zenius categoryid (URL ?categoryid=...)")
@@ -186,6 +208,9 @@ def main():
                         help="Fuzz window around the listed approximate date "
                              "(default 30d). Higher = fewer downloads.")
     parser.add_argument("--only", help="Filter songs by title substring")
+    parser.add_argument("--update-allsongs", action="store_true",
+                        help="After successful downloads, append new folder "
+                             "names to data/all_songs.txt (re-sorted).")
     args = parser.parse_args()
 
     data_dir = Path(args.data_dir).resolve()
@@ -221,17 +246,42 @@ def main():
 
     print(f"\n{len(plan)} song(s) need download")
     if args.dry_run or not plan:
+        if args.update_allsongs and args.dry_run:
+            allsongs_path = data_dir / "all_songs.txt"
+            existing = set()
+            if allsongs_path.exists():
+                with open(allsongs_path, "r") as f:
+                    existing = {ln.strip() for ln in f if ln.strip()}
+            projected = sorted({s["title"] for s in plan if s["title"] not in existing})
+            if projected:
+                print(f"\nWould append to {allsongs_path}:")
+                for t in projected:
+                    print(f"  + {t}")
+                print("(actual folder name may differ from listing title; "
+                      "re-run without --dry-run to use real extracted names)")
         return 0
 
     failures = 0
+    extracted_folders = []
     for s in plan:
         print(f"\n-> {s['id']}  {s['title']}")
         try:
             folder = download_and_extract(session, s, version_dir)
             print(f"   extracted to {folder}")
+            extracted_folders.append(folder.name)
         except Exception as e:
             failures += 1
             print(f"   ! {e}")
+
+    if args.update_allsongs and extracted_folders:
+        allsongs_path = data_dir / "all_songs.txt"
+        added = update_allsongs(allsongs_path, extracted_folders)
+        if added:
+            print(f"\nAppended {len(added)} entr(y/ies) to {allsongs_path}:")
+            for a in added:
+                print(f"  + {a}")
+        else:
+            print(f"\n{allsongs_path} already up-to-date")
 
     if failures:
         print(f"\n{failures} download(s) failed", file=sys.stderr)

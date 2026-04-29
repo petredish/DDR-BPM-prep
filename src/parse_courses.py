@@ -1,27 +1,22 @@
-import hashlib
-from datetime import datetime, timezone
-
 import env
 import utils
 from build_tools import writeCourseToDist
 
 
-DIFF_MAP = {
-    "beginner": "beginner",
-    "basic": "easy",
-    "difficult": "medium",
-    "expert": "hard",
-    "challenge": "challenge",
-}
+VALID_DIFFS = {"beginner", "basic", "difficult", "expert", "challenge"}
 
 
 def parseSongLineWithDiffWord(line):
-    """Format: 'Song Name,difficulty' — e.g. 'RED ZONE,beginner'"""
+    """Format: 'Song Name,difficulty' — e.g. 'RED ZONE,beginner'
+
+    Difficulty is preserved verbatim (one of beginner|basic|difficult|expert|challenge).
+    The mobile app translates to the per-song chart-key vocabulary at render time.
+    """
     name, diff = line.rsplit(",", maxsplit=1)
     diff_word = diff.strip().lower()
-    if diff_word not in DIFF_MAP:
+    if diff_word not in VALID_DIFFS:
         raise ValueError(f"Unknown difficulty '{diff_word}' in line: {line!r}")
-    return {"name": name.strip(), "diff": DIFF_MAP[diff_word]}
+    return {"name": name.strip(), "diff": diff_word}
 
 
 def parseGalaxyBraveCourse(chunk):
@@ -76,29 +71,6 @@ def validateCourseSongs(courses, summary, label):
     return missing
 
 
-def hashFile(path: str) -> str:
-    with open(path, "rb") as f:
-        return "sha256:" + hashlib.sha256(f.read()).hexdigest()
-
-
-def writeManifest(course_names):
-    with open(env.courses_version_file) as f:
-        version = int(f.read().strip())
-
-    manifest = {
-        "version": version,
-        "updated_at": datetime.now(timezone.utc).isoformat(),
-        "courses": {
-            name: {
-                "file": f"{name}.json",
-                "hash": hashFile(str(env.build_courses_dir / f"{name}.json")),
-            }
-            for name in course_names
-        },
-    }
-    utils.writeJson(manifest, str(env.build_courses_dir / "manifest.json"))
-
-
 def main():
     galaxy = [parseGalaxyBraveCourse(c) for c in parseCourseFile(env.galaxy_brave_courses_file)]
     world_sp = [parseWorldDanCourse(c, "sp") for c in parseCourseFile(env.world_dansp_courses_file)]
@@ -120,8 +92,6 @@ def main():
     writeCourseToDist(galaxy, "galaxy_brave")
     writeCourseToDist(world_sp, "world_dan_sp")
     writeCourseToDist(world_dp, "world_dan_dp")
-
-    writeManifest(["galaxy_brave", "world_dan_sp", "world_dan_dp"])
     return galaxy, world_sp, world_dp
 
 

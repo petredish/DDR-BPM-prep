@@ -27,7 +27,7 @@ title_map_file = str(seed_dir / "title_map.csv")
 galaxy_brave_courses_file = str(seed_dir / "galaxy_brave_courses.txt")
 world_dansp_courses_file = str(seed_dir / "world_dansp_courses.txt")
 world_dandp_courses_file = str(seed_dir / "world_dandp_courses.txt")
-courses_version_file = str(seed_dir / "courses_version.txt")
+version_file = str(seed_dir / "version.txt")
 
 
 log_folder = Path("./log")

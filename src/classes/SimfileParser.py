@@ -62,10 +62,14 @@ class SimfileParser:
     def parseData(self):
         title = self.simfile.title
         title_translit = self.simfile.titletranslit
+        artist = getattr(self.simfile, "artist", None) or ""
+        artist_translit = getattr(self.simfile, "artisttranslit", None) or ""
 
         self.song_data = {
             "title": title,
             "titletranslit": title_translit or title,
+            "artist": artist,
+            "artisttranslit": artist_translit or artist,
             "song_length": float(_fmt(self.song_length)),
             "per_chart": self.per_chart,
         }

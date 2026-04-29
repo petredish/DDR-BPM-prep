@@ -116,6 +116,8 @@ def summariseSong(song):
     song_summary = {
         "name": song["name"],
         "title": song["title"],
+        "artist": song.get("artist", ""),
+        "artisttranslit": song.get("artisttranslit", "") or song.get("artist", ""),
         "version": song["version"],
         "sp": summariseLevels(song["sp"]),
         "dp": summariseLevels(song["dp"]),
